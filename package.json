@@ -1,0 +1,42 @@
+{
+  "name": "document-escrow-contracts",
+  "version": "1.0.0",
+  "description": "document escrow contracts",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "@decent-bet/solido": "^1.1.6",
+    "@openzeppelin/gsn-helpers": "^0.2.3",
+    "@openzeppelin/upgrades": "^2.7.1",
+    "@tabookey/create2-helper": "^0.1.5",
+    "bignumber.js": "^9.0.0",
+    "dotenv": "^8.0.0",
+    "eth-crypto": "^1.5.2",
+    "ethereumjs-util": "^7.0.0",
+    "ethers": "^4.0.46",
+    "lodash": "^4.17.15",
+    "rlp": "^2.2.4",
+    "solc": "^0.6.1",
+    "solc-version-manager": "^0.1.6",
+    "solidity-rlp": "^2.0.1",
+    "solido-provider-ethers": "^1.0.8",
+    "truffle-hdwallet-provider": "^1.0.17",
+    "web3": "^1.0.0-beta.37"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "^3.0.1",
+    "@typechain/truffle-v5": "^2.0.0",
+    "eth-gas-reporter": "^0.2.17",
+    "typechain": "^2.0.0",
+    "typescript": "^3.8.3"
+  },
+  "scripts": {
+    "test": "truffle test",
+    "compile": "truffle compile",
+    "migrate": "truffle migrate --reset --network development"
+  },
+  "author": "",
+  "license": "ISC"
+}

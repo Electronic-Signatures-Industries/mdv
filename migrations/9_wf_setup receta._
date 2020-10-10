@@ -1,0 +1,136 @@
+const fs = require('fs');
+const ethers = require('ethers');
+
+const WTemplate = artifacts.require('WTemplate');
+const Approvals = artifacts.require('Approvals');
+const ExtensionEventRegistry = artifacts.require('ExtensionEventRegistry');
+const TestDocumentModel = artifacts.require('TestDocumentModel');
+const WFactoryHelper = require('../wfactory-helper');
+
+module.exports = async (deployer, network, accounts) => {
+  // Factory helper
+  let wf = new WFactoryHelper();
+  const owner = accounts[0];
+
+  // Obtain addresses
+  const eventRegistryAddress = require('../abi-export/ExtensionEventRegistry')
+    .ExtensionEventRegistry.address[network];
+  const approvalExtAddress = require('../abi-export/Approvals').Approvals
+    .address[network];
+  const docAddress = require('../abi-export/WFDocuments').TestDocumentModel
+    .address[network];
+  const templateAddress = require('../abi-export/WFDocuments').WTemplate
+    .address[network];
+
+  // 1) Get extensions if used in WF
+  // Get ExtensionEventRegistry extension
+  const eventRegistry = await ExtensionEventRegistry.at(eventRegistryAddress);
+
+  // Get Approvals extension
+  const approvals = await Approvals.at(approvalExtAddress);
+
+  // 2) Create WFTemplate for TestDocumentModel contract
+  const template = await WTemplate.at(templateAddress);
+
+  // 3) Add any extension addons - Create approval check
+  const logs = await approvals.add(
+    owner,
+    ['0xeeC58E89996496640c8b5898A7e0218E9b6E90cB', '0x4198258023eD0D6fae5DBCF3Af2aeDaaA363571F'],
+    [515, 300],
+    2,
+    {
+      from: owner,
+    }
+  );
+
+  const id = logs.receipt.logs[0].args.id;
+
+  // Add Approval as extension
+  const regLog = await eventRegistry.add(
+    'approvals',
+    approvals.address,
+    id,
+    {
+      from: owner,
+    }
+  );
+
+  approvalExtensionId = regLog.receipt.logs[0].args.id;
+  console.log(approvalExtensionId);
+
+  // Now we are ready and can start configuring the WF to be created
+
+  // 4) Create states
+  wf.createStates([
+    'NONE',
+    'CREATED',
+    'ACCEPTED',
+    'CERTIFIED',
+    'COMPLETED',
+    'MULTI_SIGNERS',
+  ]);
+
+  // 5) Actors
+  wf.createActors(['USER', 'NOTARY']);
+
+  // 6) Steps
+  wf.createStep({
+    currentActor: wf.getActor('USER'),
+    current: wf.getState('NONE'), // none
+    next: wf.getState('CREATED'), // created
+    mappingType: 0, // init
+  });
+  wf.createStep({
+    currentActor: wf.getActor('NOTARY'),
+    current: wf.getState('CREATED'), // created
+    next: wf.getState('ACCEPTED'), // accepted
+    mappingType: 2, // status
+    stepValidations: [wf.getState('CREATED')],
+  });
+  wf.createStep({
+    currentActor: wf.getActor('NOTARY'),
+    current: wf.getState('ACCEPTED'), // accepted
+    next: wf.getState('MULTI_SIGNERS'), // certified
+    mappingType: 2, // updated_diff
+    forkId: wf.getState('CERTIFIED'),
+    stepValidations: [wf.getState('ACCEPTED')],
+    recipientValidations: ['0x4198258023eD0D6fae5DBCF3Af2aeDaaA363571F'],
+  });
+  wf.createStep({
+    currentActor: wf.getActor('NOTARY'),
+    current: wf.getState('MULTI_SIGNERS'), // accepted
+    next: wf.getState('CERTIFIED'), // certified
+    mappingType: 2, // updated_diff
+    forkId: wf.getState('MULTI_SIGNERS'),
+    stepValidations: [wf.getState('ACCEPTED'), wf.getState('MULTI_SIGNERS')],
+    recipientValidations: ['0x4198258023eD0D6fae5DBCF3Af2aeDaaA363571F','0xeeC58E89996496640c8b5898A7e0218E9b6E90cB'],
+  });
+  wf.createStep({
+    currentActor: wf.getActor('USER'),
+    current: wf.getState('CERTIFIED'), //       forkId: 0,
+    next: wf.getState('COMPLETED'), // completed
+    mappingType: 2, // status
+    stepValidations: [wf.getState('CERTIFIED')],
+    senderValidations: ['0xeeC58E89996496640c8b5898A7e0218E9b6E90cB'],
+  });
+
+  // 7) Create WF
+  await template.createWF(
+    wf.tightLinkSteps([
+      [wf.getActor('USER'), wf.getState('NONE'), wf.getState('CREATED')],
+      [wf.getActor('NOTARY'), wf.getState('CREATED'), wf.getState('ACCEPTED')],
+      [
+        wf.getActor('NOTARY'),
+        wf.getState('ACCEPTED'),
+        wf.getState('MULTI_SIGNERS'),
+      ],
+      [
+        wf.getActor('NOTARY'),
+        wf.getState('MULTI_SIGNERS'),
+        wf.getState('CERTIFIED'),
+      ],
+      [wf.getActor('USER'), wf.getState('CERTIFIED'), wf.getState('COMPLETED')],
+    ]),
+    wf.getSteps()
+  );
+};

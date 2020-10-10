@@ -1,0 +1,22 @@
+{
+    "eslint.enable": false,
+    "files.exclude": {
+        "**/.classpath": true,
+        "**/.project": true,
+        "**/.settings": true,
+        "**/.factorypath": true
+    },
+    "slither.solcPath": "",
+    "slither.hiddenDetectors": [],
+    "cSpell.enableFiletypes": [
+        "markdown"
+    ],
+    "spellright.language": [
+        "Spanish"
+    ],
+    "spellright.documentTypes": [
+        "latex",
+        "plaintext",
+        "markdown"
+    ]
+}

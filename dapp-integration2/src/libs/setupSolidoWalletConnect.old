@@ -1,0 +1,128 @@
+import { SolidoModule } from "@decent-bet/solido";
+import { EthersPlugin, DispatcherArgs } from "solido-provider-ethers";
+import { ethers } from "ethers";
+import { of } from "rxjs";
+import { map } from "rxjs/operators";
+import WalletConnectProvider from "@walletconnect/web3-provider";
+import { EthrDIDOptions } from "./ethrdid";
+
+const contractImports = require("./contracts");
+
+export const setupSolido = async () => {
+  // const networks: any = {
+  //   3: 'ropsten',
+  //   1: 'mainnet',
+  //   4: 'rinkeby',
+  // }
+  // Create Solido Module
+  const contractMappings = [
+    {
+      name: "Documents",
+      import: contractImports.DocumentContract,
+      provider: EthersPlugin,
+      enableDynamicStubs: true
+    }
+  ];
+
+  // Create Solido Module
+  const solido = new SolidoModule(contractMappings);
+
+  //  const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545')
+  //  Create WalletConnect Provider
+  const wcProvider = new WalletConnectProvider({
+    rpc: {
+      3: "https://ropsten.infura.io/v3/92ed13edfad140409ac24457a9c4e22d"
+    }
+    // infuraId: "27e484dcd9e3efcfd25a83a78777cdf1" // Required
+  });
+
+  //  const accounts = await (window as any).ethereum.enable()
+  //  const defaultAccount = accounts[0]
+  await wcProvider.enable();
+
+  const provider = new ethers.providers.Web3Provider(wcProvider, "ropsten");
+
+  // Configure reactive solido store
+  const store = {
+    state: {
+      currentInvoice: {
+        id: "",
+        supplier: "",
+        debtor: "",
+        status: "NONE"
+      }
+    },
+    mutations: {
+      ADD_DOCUMENT: (e: DispatcherArgs, contract: EthersPlugin) => {
+        return of(e as any[]).pipe(
+          map(items => {
+            return {
+              id: items[0],
+              supplier: items[1],
+              debtor: items[2],
+              status: "CREATED"
+            };
+          })
+        );
+      },
+      CERTIFY_INVOICE: (e: DispatcherArgs, contract: EthersPlugin) => {
+        return of({
+          ...((contract as any).store as any).state.currentInvoice,
+          status: "CERTIFIED_INVOICE"
+        });
+      },
+      CERTIFY_DOCUMENTS: (e: DispatcherArgs, contract: EthersPlugin) => {
+        return of({
+          ...((contract as any).store as any).state.currentInvoice,
+          status: "CERTIFIED_DOCUMENTS"
+        });
+      }
+    },
+    mapEvents: {
+      LogAddInvoice: {
+        getter: "currentInvoice",
+        mutation: "ADD_DOCUMENT"
+      },
+      LogCertifyByDebtor: {
+        getter: "currentInvoice",
+        mutation: "CERTIFY_INVOICE"
+      },
+      LogCertifyByTrust: {
+        getter: "currentInvoice",
+        mutation: "CERTIFY_DOCUMENTS"
+      }
+    },
+    mapActions: {
+      addInvoice: {
+        getter: "currentInvoice",
+        onFilter: "LogAddInvoice",
+        mutation: "ADD_DOCUMENT"
+      }
+    }
+  };
+
+  // Subscribe to accounts change
+  return new Promise((resolve, reject) => {
+    provider.on("accountsChanged", (accounts: string[]) => {
+      console.log(accounts);
+
+      // Bind contracts
+      const contracts = solido
+        .bindContracts({
+          ethers: {
+            provider,
+            options: {
+              privateKey: "provider",
+              defaultAccount: accounts[0],
+              provider,
+              network: "ropsten",
+              store
+            }
+          }
+        })
+        .connect();
+
+      return resolve(contracts);
+    });
+  });
+};

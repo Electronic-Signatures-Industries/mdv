@@ -1,0 +1,77 @@
+const fs = require('fs');
+const ethers = require('ethers');
+
+const WTemplate = artifacts.require('WTemplate');
+const Approvals = artifacts.require('Approvals');
+const ExtensionEventRegistry = artifacts.require('ExtensionEventRegistry');
+const TestDocumentModel = artifacts.require('TestDocumentModel');
+const WFactoryHelper = require('../wfactory-helper');
+
+const ContractImportBuilder = require('../contract-import-builder');
+
+module.exports = async (deployer, network, accounts) => {
+
+  // Factory helper
+  let wf = new WFactoryHelper();
+
+  const eventRegistryAddress = require('../abi-export/ExtensionEventRegistry').ExtensionEventRegistry.address['ropsten'];
+  const approvalExtAddress = require('../abi-export/Approvals').Approvals.address['ropsten'];
+  // Get ExtensionEventRegistry extension
+  const eventRegistry = await ExtensionEventRegistry.at(eventRegistryAddress);
+  const owner = accounts[0];
+
+  // Get Approvals extension
+  const approvals = await Approvals.at(approvalExtAddress);
+
+  // Deploy TestDocumentModel
+  await deployer.deploy(TestDocumentModel, eventRegistry.address);
+  const modelContract = await TestDocumentModel.deployed();
+
+  // Create WFTemplate
+  await deployer.deploy(WTemplate, modelContract.address);
+  const template = await WTemplate.deployed();
+
+
+  //  add owner as admin
+  await template.addACL(owner); // add recipient
+
+  const builder = new ContractImportBuilder();
+  const path = `${__dirname}/../abi-export/WFDocuments.js`;
+
+  builder.setOutput(path);
+  builder.onWrite = (output) => {
+    fs.writeFileSync(path, output);
+  };
+
+
+  builder.addContract(
+    'Approvals',
+    approvals,
+    approvals.address,
+    network
+  );
+
+  builder.addContract(
+    'TestDocumentModel',
+    modelContract,
+    modelContract.address,
+    network
+  );
+
+
+  builder.addContract(
+    'ExtensionEventRegistry',
+    eventRegistry,
+    eventRegistry.address,
+    network
+  );
+
+
+  builder.addContract(
+    'WTemplate',
+    template,
+    template.address,
+    network
+  );
+  //  builder.addContract("DocumentPayableContract", documentPayable, documentPayable.address, network);
+};

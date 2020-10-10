@@ -1,0 +1,71 @@
+plugins {
+	id 'org.springframework.boot' version '2.2.4.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+	id 'java'
+}
+
+group = 'com.dss.blockchain'
+version = '1.0.11'
+sourceCompatibility = '1.8'
+
+repositories {
+	mavenCentral()
+	jcenter()
+	maven { url 'https://jitpack.io' }
+	maven { url 'https://dl.bintray.com/ethereum/maven/' }
+}
+
+
+bootJar {
+	launchScript()
+}
+	
+dependencies {
+//	compile group: 'com.google.inject.extensions', name: 'guice-multibindings', version: '2.0'
+	// https://mvnrepository.com/artifact/org.ethereum/rocksdbjni
+	compile group: 'org.ethereum', name: 'rocksdbjni', version: '5.9.2'
+
+	compile group: 'org.ethereum', name: 'ethereumj-core', version: '1.10.1-RELEASE'
+
+	// https://mvnrepository.com/artifact/com.googlecode.xades4j/xades4j
+	compile group: 'com.googlecode.xades4j', name: 'xades4j', version: '1.5.1'
+
+	implementation 'com.github.ipfs:java-ipfs-http-client:v1.2.3'
+	compile 'io.reactivex.rxjava2:rxjava:2.0.8'
+	compile 'com.squareup.okhttp:okhttp:2.5.0'
+	compile ('org.web3j:core:4.5.5')
+	compile ('org.web3j:web3j-spring-boot-starter:4.0.3')
+// https://mvnrepository.com/artifact/org.bouncycastle/bcpkix-jdk15on
+	compile group: 'org.bouncycastle', name: 'bcpkix-jdk15on', version: '1.64'
+
+//
+//	compile group: 'org.digidoc4j.dss', name: 'dss-model', version: '5.5.d4j.1'
+//	compile group: 'org.digidoc4j.dss', name: 'dss-xades', version: '5.5.d4j.1'
+//	compile group: 'org.digidoc4j.dss', name: 'dss-pades', version: '5.5.d4j.1'
+//	compile group: 'org.digidoc4j.dss', name: 'dss-cades', version: '5.5.d4j.1'
+//
+//	compile group: 'org.digidoc4j.dss', name: 'dss-reports', version: '5.5.d4j.1'
+//	compile group: 'org.digidoc4j.dss', name: 'dss-service', version: '5.5.d4j.1'
+//	compile group: 'org.digidoc4j.dss', name: 'dss-common-validation-jaxb', version: '5.5.d4j.1'
+//	compile group: 'org.digidoc4j.dss', name: 'dss-asic-common', version: '5.5.d4j.1'
+//	compile group: 'org.digidoc4j.dss', name: 'dss-crl-parser-x509crl', version: '5.5.d4j.1'
+//	compile group: 'org.digidoc4j.dss', name: 'dss-tsl-validation', version: '5.5.d4j.1'
+//	compile group: 'org.digidoc4j.dss', name: 'dss-utils-apache-commons', version: '5.5.d4j.1'
+//	compile group: 'org.digidoc4j.dss', name: 'dss-document', version: '5.5.d4j.1'
+//	compile group: 'org.digidoc4j.dss', name: 'dss-token', version: '5.5.d4j.1'
+//
+
+// https://mvnrepository.com/artifact/org.digidoc4j/digidoc4j
+	compile group: 'org.digidoc4j', name: 'digidoc4j', version: '4.0.1'
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter'
+	testImplementation('org.springframework.boot:spring-boot-starter-test') {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}
+}
+
+test {
+	useJUnitPlatform()
+}
